@@ -69,7 +69,7 @@ class Pty:
                 tty=' -t' if self.tty else '',
                 base_cmd=base_cmd,
                 container_id=container_id,
-                command=''.join(self.command))
+                command=' '.join(self.command))
         else:
             base_cmd = 'ssh -i {key_location} -A -t -o StrictHostKeyChecking=no {user}@{public_ip}'.format(
                 key_location=self.ssh_key_location,
@@ -82,7 +82,7 @@ class Pty:
                 tty=' -t' if self.tty else '',
                 base_cmd=base_cmd,
                 container_id=container_id,
-                command=''.join(self.command))
+                command=' '.join(self.command))
 
         subprocess.call(cmd, shell=True)
 

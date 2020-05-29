@@ -1,7 +1,11 @@
+import os
+
 import oyaml as yaml
 from pathlib import Path
 from jsonpath_ng import parse
-from jinja2 import Template
+from jinja2 import Environment, FileSystemLoader
+from jinja2.exceptions import TemplateNotFound
+from jinja2.utils import open_if_exists
 from . import template, exceptions
 
 
@@ -33,12 +37,46 @@ class FileLoader:
 
 
 class FileLoaderTemplate(FileLoader):
+    class JinjaLoader(FileSystemLoader):
+        def split_template_path(self, template):
+            # based on https://github.com/pallets/jinja/blob/ca8b0b0287e320fe1f4a74f36910ef7ae3303d99/src/jinja2/loaders.py#L19
+            pieces = []
+            for piece in template.split("/"):
+                if piece and piece != ".":
+                    pieces.append(piece)
+            return pieces
+
+        def get_source(self, environment, template):
+            # based on https://github.com/pallets/jinja/blob/ca8b0b0287e320fe1f4a74f36910ef7ae3303d99/src/jinja2/loaders.py#L174
+            pieces = self.split_template_path(template)
+            for searchpath in self.searchpath:
+                filename = os.path.join(searchpath, *pieces)
+                f = open_if_exists(filename)
+                if f is None:
+                    continue
+                try:
+                    contents = f.read().decode(self.encoding)
+                finally:
+                    f.close()
+
+                mtime = os.path.getmtime(filename)
+
+                def uptodate():
+                    try:
+                        return os.path.getmtime(filename) == mtime
+                    except OSError:
+                        return False
+
+                return contents, filename, uptodate
+            raise TemplateNotFound(template)
+
     file_types = ["*.tpl"]
 
     def __init__(self, file_path, envs, env_file):
         super(FileLoaderTemplate, self).__init__(file_path)
         self.envs = envs
         self.env_file = env_file
+        self.base_dir = os.path.dirname(os.path.realpath(file_path))
 
     def load_raw_data(self):
         file_data = super(FileLoaderTemplate, self).load_raw_data()
@@ -50,7 +88,7 @@ class FileLoaderTemplate(FileLoader):
         for env in self.envs:
             k, v = env.split('=')
             data[k] = v
-        return Template(str(file_data)).render(data)
+        return Environment(loader=self.JinjaLoader(self.base_dir)).from_string(str(file_data)).render(data)
 
 
 class FileLoaderEnvs:

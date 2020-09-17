@@ -1,3 +1,5 @@
+import sys
+
 import click
 
 from ..alias import AliasedGroup
@@ -79,6 +81,7 @@ def apply(ctx, file_path, template_path, dry_run, deploy, envs, env_file, cluste
                 resp = bw.apply_object(tmpl=tmpl, deploy=deploy)
             except Exception as err:
                 click.echo(click.style(str(err), fg='red'))
+                sys.exit(1)
             else:
                 click.echo(click.style(object_type.show_response(resp), fg="green"))
                 if resp.get('deploy'):

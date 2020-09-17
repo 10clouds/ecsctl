@@ -280,7 +280,6 @@ class ProxyTemplate:
         """
         _empty = []
         if data:
-            print(data)
             for _key, _value in data.items():
                 _empty.append({key: _key, value: _value})
             return _empty
@@ -310,7 +309,7 @@ class TaskDefinition(ProxyTemplate):
 
     def to_request(self, **kwargs):
         self.yaml['family'] = self.name
-        tags = self._from_human_dict(self.tags)
+        tags = self._from_human_dict(self.tags, key='key')
         if tags:
             self.yaml['tags'] = tags
         if not self.yaml.get('cpu') is None:
@@ -461,11 +460,11 @@ class Service(ProxyTemplate):
         self.yaml['serviceName'] = self.name
         if not 'cluster' in self.yaml:
             self.yaml['cluster'] = self.cluster
-        tags = self._from_human_dict(self.tags)
+        tags = self._from_human_dict(self.tags, key='key')
         if tags:
             self.yaml['tags'] = tags
-        if 'enable_ecs_managed_tags' in self.yaml:
-            data = self.yaml.pop('enable_ecs_managed_tags')
+        if 'enableEcsManagedTags' in self.yaml:
+            data = self.yaml.pop('enableEcsManagedTags')
             self.yaml['enableECSManagedTags'] = data
         return self.yaml
 
